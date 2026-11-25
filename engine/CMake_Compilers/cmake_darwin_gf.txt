@@ -1,0 +1,175 @@
+########################################
+#       ENGINE - Gfortran COMPILER
+#       macOS (darwin) Apple Silicon
+#########################################
+# Derived from cmake_linuxa64_gf.txt.
+# Requirements (MacPorts, prefix /opt/local): gcc15 (gfortran-mp-15, gcc-mp-15, g++-mp-15), cmake
+# Differences to Linux:
+#   - CPP_mach=CPP_macosx64 (the Linux machine branches read /proc)
+#   - SMP (OpenMP) only: no MPI, no MUMPS
+#   - extlib has no macOS static libraries: zlib comes from the macOS SDK,
+#     MD5 is compiled from Compiling_tools/darwin/md5.c
+#   - no -lrt, no -march, no static runtime link
+
+
+# General machine flag setting
+set ( cppmach "-DCPP_mach=CPP_macosx64" )
+set ( cpprel  "-DCPP_rel=75" )
+
+set( unused_dummy_arg "")
+
+# MPI
+# ---
+if ( DEFINED MPI )
+  set ( mpiver "${MPI}" )
+  if ( mpiver STREQUAL "smp")
+     set (mpi_suf "" )
+  else()
+    message( FATAL_ERROR "\n ERROR : -mpi=${mpiver} not available for darwin_gf (SMP/OpenMP only)\n\n" )
+  endif()
+endif ()
+
+set ( RELNAME ${arch}${mpi_suf}  )
+
+# Third party libraries
+# ---------------------
+
+#H3D
+set (h3d_inc "-I${source_directory}/../extlib/h3d/includes")
+
+#ZLIB (macOS SDK)
+set (zlib_inc "")
+set (zlib_lib "-lz")
+
+# MD5
+set (md5_inc "-I${source_directory}/../extlib/md5/include")
+set (md5_lib "")
+set (md5_source ${source_directory}/../Compiling_tools/darwin/md5.c)
+list (APPEND c_source_files ${md5_source})
+
+
+# compiler Flags
+# --------------
+set (CMAKE_Fortran_FLAGS_DEBUG " " )
+set (CMAKE_Fortran_FLAGS_RELEASE " " )
+
+# Single / Double Precision
+# -------------------------
+if (precision STREQUAL "sp")
+  set (precision_flag "-DMYREAL4")
+else (precision STREQUAL "sp")
+  set (precision_flag "-DMYREAL8")
+endif (precision STREQUAL "sp")
+
+# Modules directory
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/modules )
+set(CMAKE_Fortran_MODDIR_FLAG "-J" )
+
+message (STATUS "modules: ${CMAKE_Fortran_MODULE_DIRECTORY}")
+
+#Generic Compilation flags
+###########################
+
+set ( wo_linalg "-DWITHOUT_LINALG" )
+
+if ( CMAKE_C_COMPILER_VERSION VERSION_GREATER 10)
+set( portability "-fallow-argument-mismatch -fallow-invalid-boz -std=legacy")
+endif()
+
+set ( opt_flag " ${wo_linalg} -DCOMP_GFORTRAN=1 -ffp-contract=off -frounding-math -fopenmp " )
+
+set( strict " -Werror=aliasing -Werror=unused-dummy-argument -Werror=do-subscript -Werror=array-bounds -Werror=tabs -Werror=surprising ")
+set( strict_wo_mpi " -Werror=aliasing ${unused_dummy_arg} -Werror=do-subscript -Werror=array-bounds -Werror=tabs -Werror=surprising ")
+
+set( arch_flags "-DCOMP_GFORTRAN=1 -fdec-math -DARCH_CPU=ARM" )
+set( c_arch_flags "-DCOMP_GFORTRAN=1 -DARCH_CPU=ARM" )
+
+if ( debug STREQUAL "1" )
+# Fortran
+
+set( legacy_flags "-Wall -O0 -g -fdec-math -fbacktrace ${opt_flag} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 ${arch_flags} -ffixed-line-length-none  ${portability} ${ADF}  ")
+
+set( unused_dummy_arg_strict_flags "${arch_flags} -Wall -Warray-temporaries -O0 -g -fbacktrace ${opt_flag} ${strict_wo_mpi} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 -ffixed-line-length-none ${ADF}  ")
+
+set_source_files_properties(${source_files}  PROPERTIES COMPILE_FLAGS "${arch_flags} -Wall -Warray-temporaries -O0 -g -fbacktrace ${opt_flag} ${strict} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 -ffixed-line-length-none ${ADF}  " )
+
+# C source files
+set_source_files_properties(${c_source_files} PROPERTIES COMPILE_FLAGS "${h3d_inc} ${zlib_inc} ${md5_inc} ${precision_flag}  ${cppmach} ${cpprel} ${c_arch_flags} -O0 -g  -fopenmp " )
+
+# CXX source files
+set_source_files_properties(${cpp_source_files} PROPERTIES COMPILE_FLAGS "${h3d_inc} ${zlib_inc} ${md5_inc} ${precision_flag} ${cppmach} ${cpprel} ${c_arch_flags} -O0 -g -fopenmp -std=c++11  " )
+
+else ()
+
+# Fortran
+
+set( legacy_flags " -nostdinc -w -O3 ${opt_flag} ${precision_flag} ${cppmach} ${cpprel} ${arch_flags} -DCPP_comp=f90 -ffixed-line-length-none  ${portability} ${ADF} " )
+
+set( unused_dummy_arg_strict_flags "${arch_flags} -nostdinc -O3 ${opt_flag} ${strict_wo_mpi} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 -ffixed-line-length-none ${ADF} ")
+
+set_source_files_properties( ${source_files}  PROPERTIES COMPILE_FLAGS "${arch_flags} -nostdinc -O3 ${opt_flag} ${strict} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 -ffixed-line-length-none ${ADF} " )
+
+# C source files
+set_source_files_properties(${c_source_files} PROPERTIES COMPILE_FLAGS " ${c_arch_flags} -w -O2 ${h3d_inc} ${zlib_inc} ${md5_inc} ${opt_flag} ${precision_flag} ${cppmach} ${cpprel} " )
+
+# CXX source files
+set_source_files_properties(${cpp_source_files} PROPERTIES COMPILE_FLAGS "${c_arch_flags} -w -O2 ${h3d_inc} ${zlib_inc} ${md5_inc} ${opt_flag} ${precision_flag} ${cppmach} ${cpprel} -std=c++11  " )
+
+endif()
+
+
+# Linking flags
+# - stack_size: macOS fixes the main thread stack at link time (setrlimit at run time
+#   cannot enlarge it), Linux builds rely on "ulimit -s unlimited" instead.
+#   512 MB is the arm64 linker maximum.
+set (CMAKE_EXE_LINKER_FLAGS "-fopenmp -lstdc++ -Wl,-stack_size,0x20000000" )
+
+#Libraries
+set (LINK "${zlib_lib} ${md5_lib}")
+string(STRIP ${LINK} LINK)
+
+
+# -------------------------------------------------------------------------------------------------------------------------------------------
+# Specific set of compilation flag
+
+include (CMake_Compilers/legacy_fortran.cmake)
+
+if( no_python STREQUAL "1" )
+get_source_file_property( existing_flags ${source_directory}/../common_source/modules/cpp_python_funct.cpp COMPILE_FLAGS)
+set_source_files_properties( ${source_directory}/../common_source/modules/cpp_python_funct.cpp PROPERTIES COMPILE_FLAGS  "${existing_flags} -DPYTHON_DISABLED" )
+endif()
+
+
+if ( debug STREQUAL "0" )
+
+set (F_O0_compiler_flags "${arch_flags} -nostdinc -O0 ${opt_flag} -w ${portability} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 -ffixed-line-length-none ${ADF} ")
+set (F_O1_compiler_flags "${arch_flags} -nostdinc -O1 ${opt_flag} -w ${portability} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 -ffixed-line-length-none ${ADF} ")
+set (F_O2_compiler_flags "${arch_flags} -nostdinc -O2 ${opt_flag} -w ${portability} ${precision_flag} ${cppmach} ${cpprel} -DCPP_comp=f90 -ffixed-line-length-none ${ADF} ")
+set (C_O1_compiler_flags "${c_arch_flags} -O1 ${opt_flag} -w ${precision_flag} ${cppmach} ${cpprel} ${ADF} ")
+
+
+# Same per-file optimization levels as the Linux gfortran builds
+set_source_files_properties( ${source_directory}/source/engine/resol_init.F PROPERTIES COMPILE_FLAGS ${F_O1_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/engine/resol.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/output/restart/arralloc.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/materials/mat/mat001/m1lawp.F PROPERTIES COMPILE_FLAGS ${F_O1_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/elements/shell/coqueba/cbasumg3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/input/redkey0.F PROPERTIES COMPILE_FLAGS ${F_O1_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/inter3d/i3fri3.F PROPERTIES COMPILE_FLAGS ${F_O1_compiler_flags} )
+# GCC 15 + OpenMP miscompiles i22clip_tools.F at -O3 (same workaround as linux64_gf):
+# /INTER/TYPE22 FSI forces are lost and the external work is wrong (QA 1.87)
+set_source_files_properties( ${source_directory}/source/interfaces/int22/i22clip_tools.F PROPERTIES COMPILE_FLAGS ${F_O1_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/implicit/dsolve/dsgri7.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/int11/i11cor3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/int11/i11pen3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/int07/i7cor3t.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/int20/i20cor3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/intsort/i20sto.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/int23/i23cort3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/int24/i24cort3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/interfaces/int25/i25cort3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/elements/sph/spbuc3.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/elements/sph/spclasv.F PROPERTIES COMPILE_FLAGS ${F_O2_compiler_flags} )
+set_source_files_properties( ${source_directory}/source/coupling/rad2rad/rad2rad_c.c PROPERTIES COMPILE_FLAGS ${C_O1_compiler_flags} )
+
+endif()

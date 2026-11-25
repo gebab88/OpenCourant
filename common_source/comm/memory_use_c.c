@@ -15,6 +15,13 @@
 //Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Copyright>
 //Copyright>
+//Copyright>        OpenCourant
+//Copyright>        Copyright (C) 2026 OpenCourant contributors
+//Copyright>
+//Copyright>        Modified by the OpenCourant project, 2026.
+//Copyright>        Modifications are licensed under the GNU Affero General Public
+//Copyright>        License, version 3 or (at your option) any later version.
+//Copyright>
 //Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 //Copyright>        See COPYRIGHT.md at the root of the repository for the full
 //Copyright>        copyright and attribution statement.
@@ -214,6 +221,47 @@ void map_memory(int * VmPeak, int *VmSize,int *VmRSS,int *VmHWM,int *VmStk )
   }
 
 
+
+#elif CPP_mach==CPP_macosx64
+
+/* ----- */
+/* MACOS */
+/* ----- */
+/* There is no /proc on macOS: query the Mach kernel. The virtual size
+   includes the shared system cache, so like on Windows the resident
+   (working set) sizes are reported. */
+#include <stdio.h>
+#include <mach/mach.h>
+
+static int macos_vm_info(task_vm_info_data_t *info)
+{
+  mach_msg_type_number_t count = TASK_VM_INFO_COUNT;
+  return task_info(mach_task_self(), TASK_VM_INFO,
+                   (task_info_t)info, &count) == KERN_SUCCESS;
+}
+
+void memory_use_c(int *memsize)
+{
+  task_vm_info_data_t info;
+  *memsize = -1;
+  if (macos_vm_info(&info)) *memsize = (int)(info.resident_size_peak / 1048576);
+}
+
+void map_memory(int * VmPeak, int *VmSize,int *VmRSS,int *VmHWM,int *VmStk )
+{
+  task_vm_info_data_t info;
+  *VmPeak=-1;
+  *VmSize=-1;
+  *VmRSS=-1;
+  *VmHWM=-1;
+  *VmStk=-1;
+  if (macos_vm_info(&info)) {
+    *VmPeak = (int)(info.resident_size_peak / 1048576);
+    *VmSize = (int)(info.resident_size / 1048576);
+    *VmRSS  = (int)(info.resident_size / 1048576);
+    *VmHWM  = (int)(info.resident_size_peak / 1048576);
+  }
+}
 
 
 #elif 1

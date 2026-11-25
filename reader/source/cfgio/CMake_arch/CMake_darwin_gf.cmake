@@ -1,0 +1,5 @@
+# macOS (darwin, Apple Silicon) compilation flags - derived from CMake_linuxa64.cmake
+# Differences: no -march (GCC picks the Apple Silicon default), C++17 for std::filesystem
+
+set (PRECOM_DEFINITION "-DNO_GZ_LIB -DTXT_MSG -DUNV -DHCIO_DATA_DLL_EXPORTS -DUSE_NAMESPACE -DBOOST_ALL_NO_LIB -DNDEBUG -DOS_UNIX -DLINUX -DLINUX_PLATFORM")
+set (CXX_FLAGS "-fpermissive -DGCC4 -DGCC32 -c -O2 -fPIC -Wno-write-strings -frtti -std=c++17 -Wno-format-security -Wno-switch-enum -Wno-deprecated -Wno-enum-compare -fno-strict-aliasing -traditional-cpp" )

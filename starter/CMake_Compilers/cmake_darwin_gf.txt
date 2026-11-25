@@ -1,0 +1,157 @@
+#########################################
+#       STARTER - Gfortran COMPILER
+#       macOS (darwin) Apple Silicon
+#########################################
+# Derived from cmake_linuxa64_gf.txt.
+# Requirements (MacPorts, prefix /opt/local):
+#   gcc15 (gfortran-mp-15, gcc-mp-15, g++-mp-15), cmake, OpenBLAS +lapack, metis
+# Differences to Linux:
+#   - CPP_mach=CPP_macosx64 (the Linux machine branches read /proc and malloc.h)
+#   - the prebuilt hm_reader exists only for Linux/Windows: the in-tree
+#     open_reader (exec/libopen_reader_darwin_gf.dylib) is mandatory
+#   - extlib has no macOS static libraries: LAPACK comes from OpenBLAS,
+#     METIS and zlib from MacPorts, MD5 is compiled from
+#     Compiling_tools/darwin/md5.c
+#   - no -no-pie, no -march, no static runtime link
+
+
+# Executable name
+# ---------------
+
+set ( RELNAME ${arch}  )
+
+if ( NOT DEFINED macports_prefix )
+  set ( macports_prefix "/opt/local" )
+endif()
+
+# General machine flag setting
+set ( cppmach "-DCPP_mach=CPP_macosx64" )
+set ( cpprel  "-DCPP_rel=75" )
+
+
+# Third party libraries
+# ---------------------
+
+#hm_reader
+if ( USE_OPEN_READER STREQUAL 1 )
+       set ( reader_lib "-L${source_directory}/../exec -lopen_reader_darwin_gf")
+else ()
+       message( FATAL_ERROR "\n ERROR : no prebuilt hm_reader exists for macOS. Build with -DUSE_OPEN_READER=1 (build_mac.sh does this)\n\n" )
+endif()
+
+
+#Lapack (OpenBLAS contains LAPACK)
+set (lapack_lib "-L${macports_prefix}/lib -lopenblas")
+
+#metis
+set (metis_inc "-I${macports_prefix}/include")
+set (metis_lib "-L${macports_prefix}/lib -lmetis")
+
+#H3D
+set (h3d_inc "-I${source_directory}/../extlib/h3d/includes")
+
+#ZLIB (MacPorts; -L${macports_prefix}/lib is on the link line for METIS anyway)
+set (zlib_inc "-I${macports_prefix}/include")
+set (zlib_lib "-L${macports_prefix}/lib -lz")
+
+# MD5
+set (md5_inc "-I${source_directory}/../extlib/md5/include")
+set (md5_lib "")
+set (md5_source ${source_directory}/../Compiling_tools/darwin/md5.c)
+list (APPEND c_source_files ${md5_source})
+
+#
+# compiler Flags
+# --------------
+set (CMAKE_Fortran_FLAGS_DEBUG " " )
+set (CMAKE_Fortran_FLAGS_RELEASE " " )
+
+set (CMAKE_C_FLAGS_DEBUG " " )
+set (CMAKE_C_FLAGS_RELEASE " " )
+
+set (CMAKE_CPP_FLAGS_DEBUG " " )
+set (CMAKE_CPP_FLAGS_RELEASE " " )
+
+# Single / Double Precision
+# -------------------------
+if (precision STREQUAL "sp")
+  set (precision_flag "-DMYREAL4")
+else (precision STREQUAL "sp")
+  set (precision_flag "-DMYREAL8")
+endif (precision STREQUAL "sp")
+
+# Modules directory
+set(CMAKE_Fortran_MODULE_DIRECTORY ${CMAKE_BINARY_DIR}/CMakeFiles/modules )
+set(CMAKE_Fortran_MODDIR_FLAG "-J" )
+
+message (STATUS "modules: ${CMAKE_Fortran_MODULE_DIRECTORY}")
+
+#Generic Compilation flags
+###########################
+
+if ( CMAKE_C_COMPILER_VERSION VERSION_GREATER 10)
+set( portability "-fallow-argument-mismatch -fallow-invalid-boz -std=legacy")
+endif()
+
+set( strict "-Werror=aliasing -Werror=unused-dummy-argument -Werror=do-subscript -Werror=array-bounds -Werror=surprising -Werror=tabs")
+
+set( arch_flags "-DARCH_CPU=ARM" )
+
+if ( debug STREQUAL "1" )
+
+# Fortran
+set( legacy_flags " -Wall ${precision_flag} -DMETIS5 ${cppmach} ${cpprel} -DCPP_comp=f90 ${arch_flags} -DCOMP_GFORTRAN=1 -fdec-math -g -O0 -ffp-contract=off -frounding-math -fopenmp -fbacktrace -ffixed-line-length-none -Wdo-subscript ${ADF} ${portability}")
+
+set_source_files_properties( ${source_files}  PROPERTIES COMPILE_FLAGS "-Wall ${strict} ${precision_flag} -DMETIS5 ${cppmach} ${cpprel} -DCPP_comp=f90 ${arch_flags} -DCOMP_GFORTRAN=1 -fdec-math -g -O0 -ffp-contract=off -frounding-math -fopenmp -fbacktrace -ffixed-line-length-none ${ADF} " )
+
+# C source files
+set_source_files_properties(${c_source_files} PROPERTIES COMPILE_FLAGS "${h3d_inc} ${precision_flag} -DMETIS5 ${cppmach} ${cpprel} ${zlib_inc} ${md5_inc} ${metis_inc} -O0 -g -fopenmp ${arch_flags} " )
+
+# CXX source files
+set_source_files_properties(${cpp_source_files} PROPERTIES COMPILE_FLAGS "${h3d_inc} ${precision_flag} -DMETIS5 ${cppmach} ${cpprel} ${zlib_inc} ${md5_inc} -O0 -g -fopenmp -std=c++11 ${arch_flags} " )
+
+else ()
+
+# Fortran
+set( legacy_flags "-w ${precision_flag} -DMETIS5 ${cppmach} ${cpprel} -DCPP_comp=f90 ${arch_flags} -DCOMP_GFORTRAN=1 -fdec-math -O2 -ffp-contract=off -frounding-math -fopenmp -ffixed-line-length-none  ${ADF} ${portability} ")
+
+set_source_files_properties( ${source_files}  PROPERTIES COMPILE_FLAGS " ${precision_flag}  ${strict} -DMETIS5 ${cppmach} ${cpprel} -DCPP_comp=f90 -DCOMP_GFORTRAN=1 ${arch_flags} -fdec-math -O2 -ffp-contract=off -frounding-math -fopenmp -ffixed-line-length-none  ${ADF}" )
+
+# C source files
+set_source_files_properties(${c_source_files} PROPERTIES COMPILE_FLAGS "-w ${h3d_inc} ${precision_flag} -DMETIS5 ${cppmach} ${cpprel} ${zlib_inc} ${md5_inc} ${metis_inc} -O2 -fopenmp ${arch_flags} " )
+
+# CXX source files
+set_source_files_properties(${cpp_source_files} PROPERTIES COMPILE_FLAGS "-w ${h3d_inc} ${precision_flag} -DMETIS5 ${cppmach} ${cpprel} ${zlib_inc} ${md5_inc} -O2 -fopenmp -std=c++11  " )
+
+endif()
+
+# Linking flags
+# - rpath @executable_path: libopen_reader_darwin_gf.dylib is copied next to the Starter in exec/
+# - stack_size: macOS fixes the main thread stack at link time (setrlimit at run time
+#   cannot enlarge it), Linux builds rely on "ulimit -s unlimited" instead.
+#   512 MB is the arm64 linker maximum.
+set (CMAKE_EXE_LINKER_FLAGS " -O2 -fopenmp -Wl,-rpath,@executable_path -Wl,-stack_size,0x20000000" )
+
+
+#Libraries
+set (LINK "${metis_lib} ${reader_lib} ${lapack_lib} ${zlib_lib} ${md5_lib}" )
+string(STRIP ${LINK} LINK)
+
+# -------------------------------------------------------------------------------------------------------------------------------------------
+# Specific set of compilation flag
+
+# legacy fortran files
+include (CMake_Compilers/legacy_fortran.cmake)
+
+
+set (F_O0_compiler_flags " -O0 ${precision_flag} -DMETIS5 ${cppmach} ${cpprel}  -ffixed-line-length-none ${portability}")
+if ( debug STREQUAL "0" )
+#inimsg.F
+set_source_files_properties( ${source_directory}/source/output/message/inimsg.F PROPERTIES COMPILE_FLAGS ${F_O0_compiler_flags} )
+
+endif()
+
+if( no_python STREQUAL "1")
+get_source_file_property( existing_flags ${source_directory}/../common_source/modules/cpp_python_funct.cpp COMPILE_FLAGS)
+set_source_files_properties( ${source_directory}/../common_source/modules/cpp_python_funct.cpp PROPERTIES COMPILE_FLAGS  "${existing_flags} -DPYTHON_DISABLED " )
+endif()

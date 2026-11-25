@@ -20,6 +20,7 @@
   * [Build OpenCourant on Windows with cmd Shell](#build-openradioss-on-windows-with-cmd-shell)
   * [Build OpenCourant with Visual Studio](#build-openradioss-with-visual-studio)
   * [Build OpenCourant with Open_Reader](#build-openradioss-with-open_reader)
+* [How to build OpenCourant on macOS (Apple Silicon)](#how-to-build-opencourant-on-macos-apple-silicon)
 * [How to build OpenCourant on Linux with Container using Apptainer](#how-to-build-openradioss-on-linux-with-container-using-apptainer)
 * [How to debug with Visual Studio](./doc/Visual_Studio_Debugger.md)
 * [Notes on third party libraries](#notes-on-third-party-libraries)
@@ -791,6 +792,53 @@ To execute Starter with Open_Reader set PATH (for Windows) or  LD_LIBRARY (for L
 * On Windows
 
       set PATH=[PATH to OpenCourant clone]\exec:%PATH%
+
+
+## How to build OpenCourant on macOS (Apple Silicon)
+
+The macOS build is a native SMP (OpenMP) build with GCC from [MacPorts](https://www.macports.org).
+MPI and the MUMPS-based implicit solver are not available on macOS.
+
+### Prerequisites
+
+* Xcode or the Xcode Command Line Tools: `xcode-select --install`
+* MacPorts, then the compilers and libraries:
+
+      sudo port install gcc15 cmake OpenBLAS +lapack metis zlib
+
+* `git` and `git-lfs` to clone the repository, `python3` for the build scripts
+
+### Build
+
+      ./build_mac.sh [number of build jobs]
+
+The script downloads the external libraries (`extlib`), then builds the open_reader,
+Starter and Engine in double precision. The binaries are copied into **exec**:
+
+* `exec/libopen_reader_darwin_gf.dylib`
+* `exec/starter_darwin_gf`
+* `exec/engine_darwin_gf`
+
+The components can also be built one by one with the per-directory scripts:
+
+      cd starter ; ./build_script.sh -arch=darwin_gf -open_reader -nt=8
+      cd engine  ; ./build_script.sh -arch=darwin_gf -nt=8
+
+Use `OC_FC`, `OC_CC` and `OC_CXX` to select another GCC installation, and
+`MACPORTS_PREFIX` if MacPorts is not installed in `/opt/local`.
+
+### Differences to the Linux build
+
+* No prebuilt hm_reader exists for macOS. The Starter is always linked with the in-tree
+  [open_reader](#build-openradioss-with-open_reader). It does not support
+  `/PART` Irigid RBODY conversion or `/ALE/STRUCTURED_MESH`.
+* LAPACK comes from OpenBLAS and METIS and zlib from MacPorts. MD5 is compiled from
+  `Compiling_tools/darwin/md5.c` because extlib has no macOS libraries.
+* macOS cannot raise the main thread stack at run time (`ulimit -s unlimited` has no effect).
+  Starter and Engine are linked with a 512 MB main thread stack, the arm64 maximum.
+  The OpenMP thread stack is still set with `OMP_STACKSIZE`.
+
+See [INSTALL.md](INSTALL.md#environment-variables-settings-under-macos) to run the solver.
 
 
 ## How to build OpenCourant on Linux with Container using Apptainer

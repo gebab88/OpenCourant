@@ -15,6 +15,13 @@
 # Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # Copyright>
 # Copyright>
+# Copyright>        OpenCourant
+# Copyright>        Copyright (C) 2026 OpenCourant contributors
+# Copyright>
+# Copyright>        Modified by the OpenCourant project, 2026.
+# Copyright>        Modifications are licensed under the GNU Affero General Public
+# Copyright>        License, version 3 or (at your option) any later version.
+# Copyright>
 # Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 # Copyright>        See COPYRIGHT.md at the root of the repository for the full
 # Copyright>        copyright and attribution statement.
@@ -38,7 +45,12 @@ def get_arch():
   op_system=platform.system()
   cpu=platform.machine()
 
-  if (cpu=='aarch64'):
+  if (op_system=='Darwin'):
+     arch='darwin_gf'
+     default_arch='darwin_gf'
+     slash='/'
+     separator=':'
+  elif (cpu=='aarch64'):
      arch='linuxa64'
      default_arch='linuxa64'
      slash='/'

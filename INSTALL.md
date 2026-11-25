@@ -12,6 +12,7 @@ OpenCourant is made of:
 **Prerequisites**
 
 * [Environment variables settings under Linux](#environment-variables-settings-under-linux)
+* [Environment variables settings under macOS](#environment-variables-settings-under-macos)
 * [Environment variables settings under Windows cmd shell](#environment-variables-settings-under-windows-cmd-shell)
 * [Environment variables settings under Windows cygwin shell](#environment-variables-settings-under-windows-cygwin-shell)
  
@@ -40,6 +41,18 @@ Set the following environment variables:
         export RAD_H3D_PATH=$OPENCOURANT_PATH/extlib/h3d/lib/linux64
         export OMP_STACKSIZE=400m
         export LD_LIBRARY_PATH=$OPENCOURANT_PATH/extlib/hm_reader/linux64/:$LD_LIBRARY_PATH
+
+### Environment variables settings under macOS
+
+[Build OpenCourant on macOS](HOWTO.md#how-to-build-opencourant-on-macos-apple-silicon), then set:
+
+        export OPENCOURANT_PATH=[Path to OpenCourant root directory]
+        export RAD_CFG_PATH=$OPENCOURANT_PATH/hm_cfg_files
+        export OMP_STACKSIZE=400m
+
+No library path is needed: the Starter finds `libopen_reader_darwin_gf.dylib` next to itself in `exec`.
+The executables are `starter_darwin_gf` and `engine_darwin_gf`. Run them as described in
+[Running OpenCourant without MPI](#running-openradioss-without-mpi). MPI is not available on macOS.
 
 ### Environment variables settings under Windows cmd shell
 

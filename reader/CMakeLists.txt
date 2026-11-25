@@ -15,6 +15,11 @@ set (open_reader_root_dir ${CMAKE_CURRENT_SOURCE_DIR})
 
 include ( CMake_arch/CMake_${arch}.cmake )
 
+# Platforms may override this (macOS links no boost library)
+if (NOT DEFINED boost_filesystem_lib)
+   set (boost_filesystem_lib ${open_reader_root_dir}/../extlib/boost/boost_1_70_0/static/lib/${arch}/libboost_filesystem.${lib})
+endif()
+
 if (com STREQUAL "1")
     set (build_dir "cbuild_${arch}_c")
     set (DNC "-DDNC")
@@ -86,7 +91,7 @@ if (com STREQUAL "0")
                       sdi_${arch}
                       cfgio_${arch}
 		              cfgkernel_${arch}
-                      ${open_reader_root_dir}/../extlib/boost/boost_1_70_0/static/lib/${arch}/libboost_filesystem.${lib})
+                      ${boost_filesystem_lib})
 
 
 

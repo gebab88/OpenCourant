@@ -10,6 +10,7 @@ function my_help()
   echo " -arch=[build architecture]"
   echo "          linux64  : X86_64 Linux"
   echo "          linuxa64 : ARM64" 
+  echo "          darwin_gf: macOS Apple Silicon (MacPorts GCC)" 
   echo " " 
   echo " Execution control"
   echo " -nt=[threads]      : number of threads for build "
@@ -117,7 +118,16 @@ fi
 
 cd ${build_directory}
 
-cmake -DCMAKE_CXX_COMPILER=g++ -DCMAKE_C_COMPILER=gcc -Darch=${arch}  -Dcom=${com} ..
+# On macOS gcc/g++ are Apple clang: use GCC from MacPorts, like the Starter
+c_comp=gcc
+cxx_comp=g++
+if [ "$arch" == "darwin_gf" ]
+then
+   c_comp=${OC_CC:-gcc-mp-15}
+   cxx_comp=${OC_CXX:-g++-mp-15}
+fi
+
+cmake -DCMAKE_CXX_COMPILER=${cxx_comp} -DCMAKE_C_COMPILER=${c_comp} -Darch=${arch}  -Dcom=${com} ..
 return_value=$?
 if [ $return_value -ne 0 ]
 then

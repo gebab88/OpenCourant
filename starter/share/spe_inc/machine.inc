@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -45,6 +52,12 @@ C
 #elif 1
       ARCHTITLE='Linux 64 bits, Intel compiler'
 #endif
+      IBUILTIN=18
+C
+#elif CPP_mach == CPP_macosx64
+      CPUNAM = 'macosa64'
+      ARCHTITLE='macOS 64 bits, ARM, GFortran compiler'
+C     Same element group size as the Linux builds
       IBUILTIN=18
 C
 #elif 1

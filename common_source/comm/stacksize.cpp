@@ -15,6 +15,13 @@
 //Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Copyright>
 //Copyright>
+//Copyright>        OpenCourant
+//Copyright>        Copyright (C) 2026 OpenCourant contributors
+//Copyright>
+//Copyright>        Modified by the OpenCourant project, 2026.
+//Copyright>        Modifications are licensed under the GNU Affero General Public
+//Copyright>        License, version 3 or (at your option) any later version.
+//Copyright>
 //Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 //Copyright>        See COPYRIGHT.md at the root of the repository for the full
 //Copyright>        copyright and attribution statement.
@@ -27,6 +34,9 @@
 // Windows only
 #include <Windows.h>
 #include <processthreadsapi.h>
+#elif defined(__APPLE__)
+#include <stdio.h>
+#include <pthread.h>
 #else
 // Linux only
 #include <stdio.h>
@@ -136,6 +146,12 @@ void solver_stacksize(){
 		stsize = "-1 MB";
 	}
 	strcpy_s(stacksize, 128, stsize.c_str());
+#elif defined(__APPLE__)
+	// Stacksize on macOS: the main thread stack is fixed at link time
+	// (-Wl,-stack_size), getrlimit only shows the shell soft limit
+	// -------------------------------------------------------------------------------------------------------
+	long int StMB = (long int)(pthread_get_stacksize_np(pthread_self()) / (1024*1024));
+	snprintf(stacksize, sizeof(stacksize), "%ld MB", StMB);
 #else
 	// Stacksize on Linux getrlimit call
 	// -------------------------------------------------------------------------------------------------------

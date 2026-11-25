@@ -15,6 +15,13 @@
 //Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Copyright>
 //Copyright>
+//Copyright>        OpenCourant
+//Copyright>        Copyright (C) 2026 OpenCourant contributors
+//Copyright>
+//Copyright>        Modified by the OpenCourant project, 2026.
+//Copyright>        Modifications are licensed under the GNU Affero General Public
+//Copyright>        License, version 3 or (at your option) any later version.
+//Copyright>
 //Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 //Copyright>        See COPYRIGHT.md at the root of the repository for the full
 //Copyright>        copyright and attribution statement.
@@ -590,6 +597,7 @@ void cpuinfo_c(char *hostname,int *lenhost, char *cputype, int *lencputype, int 
 #include <sys/sysctl.h>
 #include <unistd.h>
 #include <strings.h>
+#include <stdint.h>
 
 
 void cpuinfo_c(char *hostname,int *lenhost, char *cputype, int *lencputype, int *frequence,int *memory, int *swap )
@@ -619,7 +627,10 @@ void cpuinfo_c(char *hostname,int *lenhost, char *cputype, int *lencputype, int 
   /* CPU Frequency */
   /*---------------*/
 
-  sysctlbyname("hw.cpufrequency",&freq,&ilen, NULL, 0);
+  /* hw.cpufrequency exists only on Intel Macs, Apple Silicon reports 0 */
+  freq = 0;
+  ilen = sizeof(freq);
+  if (sysctlbyname("hw.cpufrequency",&freq,&ilen, NULL, 0) != 0) freq = 0;
   frq = freq/1000000;
   *frequence = (int)frq;
 
@@ -627,19 +638,26 @@ void cpuinfo_c(char *hostname,int *lenhost, char *cputype, int *lencputype, int 
   /* System Memory */
   /*---------------*/
 
-   sysctlbyname("hw.physmem",&mem,&ilen, NULL, 0);
-   mem = mem / 1048576 ;
+   /* hw.physmem is a 32-bit value: use the 64-bit hw.memsize */
+   {
+     uint64_t memsize = 0;
+     size_t memlen = sizeof(memsize);
+     if (sysctlbyname("hw.memsize",&memsize,&memlen, NULL, 0) != 0) memsize = 0;
+     mem = (long)(memsize / 1048576);
+   }
    *memory = (int) mem;
 
   /*---------------*/
   /* Swap          */
   /*---------------*/
-  stream = popen ("df -k /","r");
-  fgets(swapstring,256, stream);
-  fgets(swapstring,256, stream);
-
-  sscanf(swapstring,"%s %s %s %s",s1,s2,s3,s4);
-  *swap = atoi(s4)/1024;
+  /* macOS swap is dynamic: report the current swap file size */
+  {
+    struct xsw_usage swapusage;
+    size_t swaplen = sizeof(swapusage);
+    *swap = 0;
+    if (sysctlbyname("vm.swapusage",&swapusage,&swaplen, NULL, 0) == 0)
+      *swap = (int)(swapusage.xsu_total / 1048576);
+  }
 
 }
 

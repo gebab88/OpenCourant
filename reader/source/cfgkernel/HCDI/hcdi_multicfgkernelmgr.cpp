@@ -15,6 +15,13 @@
 //Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 //Copyright>
 //Copyright>
+//Copyright>        OpenCourant
+//Copyright>        Copyright (C) 2026 OpenCourant contributors
+//Copyright>
+//Copyright>        Modified by the OpenCourant project, 2026.
+//Copyright>        Modifications are licensed under the GNU Affero General Public
+//Copyright>        License, version 3 or (at your option) any later version.
+//Copyright>
 //Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 //Copyright>        See COPYRIGHT.md at the root of the repository for the full
 //Copyright>        copyright and attribution statement.
@@ -25,9 +32,16 @@
 #include <UTILS/error.h>
 #include <UTILS/file_utils.h>
 #include <stdio.h>
+#if defined(__APPLE__)
+// extlib has no macOS build of the boost_filesystem library; use the
+// equivalent C++17 standard library API instead.
+#include <filesystem>
+namespace fs = std::filesystem;
+#else
 #include "boost/filesystem.hpp"   // includes all needed Boost.Filesystem declarations
-#include <iostream>               // for std::cout
 namespace fs = boost::filesystem;
+#endif
+#include <iostream>               // for std::cout
 
 MvFileFormat_e MultiCFGKernelMgr::CFGKernelSentinel::s_effSolver = FF_UNKNOWN;
 int MultiCFGKernelMgr::CFGKernelSentinel::count = 0;
