@@ -15,6 +15,13 @@ Copyright>        You should have received a copy of the GNU Affero General Publ
 Copyright>        along with this program.  If not, see <https://www.gnu.org/licenses/>.
 Copyright>
 Copyright>
+Copyright>        OpenCourant
+Copyright>        Copyright (C) 2026 OpenCourant contributors
+Copyright>
+Copyright>        Modified by the OpenCourant project, 2026.
+Copyright>        Modifications are licensed under the GNU Affero General Public
+Copyright>        License, version 3 or (at your option) any later version.
+Copyright>
 Copyright>        This file is part of OpenCourant, a fork of OpenRadioss.
 Copyright>        See COPYRIGHT.md at the root of the repository for the full
 Copyright>        copyright and attribution statement.
@@ -989,8 +996,10 @@ C
      G        IXR       , IMERGE2    ,IADMERGE2  ,NEL       ,DEFAULTS  ,
      H        GLOB_THERM,IBEAM_VECTOR,RBEAM_VECTOR)
 C
-       ELSEIF( IRIGID_MAT>0) THEN
-C Rigid material
+       ELSEIF( MTN == 13 .AND. IRIGID_MAT>0) THEN
+C Rigid material (/MAT/RIGID not converted to /RBODY by the reader):
+C only LAW13 groups are initialized as rigid, other groups take the
+C standard element initialization below
            LFT=1
            LLT=NEL
            NFT = IPARG(3,NG)
